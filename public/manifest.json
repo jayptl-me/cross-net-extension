@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Cross-Net Wallet",
+  "version": "0.1.0",
+  "description": "Cross-chain wallet extension for Web3 applications",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "logo192.png",
+      "48": "logo192.png",
+      "128": "logo192.png"
+    }
+  },
+  "icons": {
+    "16": "logo192.png",
+    "48": "logo192.png",
+    "128": "logo192.png"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["utils/browser-compat.js", "contentScript.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["injectScript.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
