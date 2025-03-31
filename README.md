@@ -1,46 +1,162 @@
-# Getting Started with Create React App
+# Cross-Net Wallet
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![Cross-Net Logo](https://via.placeholder.com/150x150.png?text=Cross-Net)
 
-## Available Scripts
+**Cross-Net Wallet** is a web3 browser wallet extension that enables seamless cross-chain transactions and asset management across multiple blockchain networks.
 
-In the project directory, you can run:
+## 🌉 Overview
 
-### `npm start`
+Cross-Net Wallet is designed to simplify the multi-chain experience for both users and developers. It injects a standard Ethereum provider that follows EIP-1193 and EIP-6963 standards, allowing for smooth integration with existing dApps while providing enhanced cross-chain capabilities.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## ✨ Features
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- **EIP-1193 Compliance**: Full compatibility with the standard Ethereum Provider API
+- **EIP-6963 Support**: Multi-wallet detection and announcement for modern dApps
+- **Cross-Chain Operations**: Easily switch between and interact with multiple blockchains
+- **Transaction Management**: Send, sign, and track transactions across networks
+- **Chain Management**: Add custom networks and switch between chains
+- **Robust Error Handling**: Standardized error codes and messages
+- **Event System**: Real-time notifications of account, network, and wallet state changes
+- **Developer-Friendly**: Extensive logging and debugging features
 
-### `npm test`
+## 🔧 Technical Implementation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Cross-Net Wallet injects a provider script into web pages that:
 
-### `npm run build`
+1. Registers as an Ethereum provider (window.ethereum)
+2. Announces itself via EIP-6963 for multi-wallet environments
+3. Communicates with the background wallet service via a messaging system
+4. Handles all standard Ethereum JSON-RPC methods
+5. Manages connection state and emits appropriate events
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 📚 API Reference
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Standard Methods
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Method | Description |
+|--------|-------------|
+| `eth_requestAccounts` | Requests user permission to connect to their accounts |
+| `eth_accounts` | Returns a list of connected accounts |
+| `eth_chainId` | Returns the current chain ID |
+| `eth_sendTransaction` | Submits a transaction for user approval and network broadcast |
+| `personal_sign` | Signs a personal message |
+| `eth_signTransaction` | Signs a transaction without sending it |
+| `eth_getBalance` | Retrieves an account's balance |
+| `wallet_switchEthereumChain` | Switches to a different blockchain network |
+| `wallet_addEthereumChain` | Adds a new blockchain network |
+| `eth_sign` | Signs data with an Ethereum account |
+| `eth_signTypedData` | Signs typed data according to EIP-712 |
 
-### `npm run eject`
+### Events
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+| Event | Parameters | Description |
+|-------|------------|-------------|
+| `accountsChanged` | `Array<string>` | Emitted when the accounts array changes |
+| `chainChanged` | `string` | Emitted when the connected chain changes |
+| `connect` | `{ chainId: string }` | Emitted when the provider is connected |
+| `disconnect` | `Error` | Emitted when the provider loses its connection |
+| `networkChanged` | `string` | Legacy event emitted for network changes |
+| `chainIdChanged` | `string` | Alternative event for chain ID changes |
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🚀 Getting Started
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### For Users
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+1. Install the Cross-Net Wallet extension from your browser's extension store
+2. Create a new wallet or import an existing one
+3. Browse to your favorite dApp and connect your wallet
+4. Enjoy seamless cross-chain interactions!
 
-## Learn More
+### For Developers
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+To interact with Cross-Net Wallet in your dApp:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```javascript
+// Check if Cross-Net is available
+if (window.ethereum) {
+  try {
+    // Request user permission to connect
+    const accounts = await window.ethereum.request({ 
+      method: 'eth_requestAccounts' 
+    });
+    
+    // Get the current chain ID
+    const chainId = await window.ethereum.request({ 
+      method: 'eth_chainId' 
+    });
+    
+    console.log(`Connected to chain ${chainId} with account ${accounts[0]}`);
+    
+    // Listen for account changes
+    window.ethereum.on('accountsChanged', (accounts) => {
+      console.log('Accounts changed:', accounts);
+    });
+    
+    // Listen for chain changes
+    window.ethereum.on('chainChanged', (chainId) => {
+      console.log('Chain changed:', chainId);
+      // Reload the page to refresh state
+      window.location.reload();
+    });
+    
+  } catch (error) {
+    console.error('Error connecting to wallet:', error);
+  }
+}
+```
+
+For EIP-6963 compatibility:
+
+```javascript
+// Request all available providers
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+
+// Listen for provider announcements
+window.addEventListener('eip6963:announceProvider', (event) => {
+  const { info, provider } = event.detail;
+  
+  if (info.rdns === 'com.crossnet.wallet') {
+    console.log('Cross-Net Wallet detected!');
+    // Use provider to interact with the wallet
+  }
+});
+```
+
+## 🧪 Testing
+
+To test Cross-Net Wallet with your dApp:
+
+1. Install the extension
+2. Enable developer mode in the extension
+3. Use the test networks and test accounts provided
+4. Check the console for detailed logs of all wallet operations
+
+## 🔒 Security
+
+Cross-Net Wallet implements several security features:
+
+- Private keys never leave the extension
+- All communications are encrypted
+- Signed transactions require explicit user approval
+- Chain switching and adding requires user permission
+- No automatic connections without user consent
+
+## 🤝 Contributing
+
+We welcome contributions to Cross-Net Wallet! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
+
+## 📄 License
+
+Cross-Net Wallet is released under the [MIT License](LICENSE).
+
+## 📞 Contact
+
+For questions, support, or feedback, please reach out to:
+
+- Email: support@crossnet.example.com
+- Twitter: [@CrossNetWallet](https://twitter.com/example)
+- Discord: [Cross-Net Community](https://discord.gg/example)
+
+---
+
+Built with ❤️ for the Web3 community
