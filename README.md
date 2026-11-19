@@ -1,235 +1,119 @@
 # Cross-Net Wallet
 
-![Cross-Net Logo](https://via.placeholder.com/150x150.png?text=Cross-Net)
+A Manifest V3 browser wallet extension that injects an EIP-1193 and
+EIP-6963 Ethereum provider into web pages.
 
-**Cross-Net Wallet** is a web3 browser wallet extension that enables seamless cross-chain transactions and asset management across multiple blockchain networks, with built-in cross-browser compatibility.
+Cross-Net Wallet lets a dapp connect, sign and send transactions through
+`window.ethereum`, while keys, approvals and network switching live inside
+the extension. A browser compatibility layer normalises the Chrome and
+Firefox extension APIs behind one promise-based interface.
 
-## 🌉 Overview
+- **Standard provider.** Injects `window.ethereum` implementing the
+  EIP-1193 request API and announces itself over EIP-6963 for multi-wallet
+  detection (`rdns: com.crossnet.wallet`).
+- **Four built-in networks.** Ethereum mainnet, Polygon, Sepolia and
+  Polygon Amoy ship in `src/interfaces/Chain.ts`, each with fallback RPC
+  endpoints and a block explorer link; custom networks can be added in
+  settings.
+- **Approval UI.** Connection and transaction requests open extension
+  screens (`ConnectApproval`, `TransactionApproval`) instead of signing
+  silently.
+- **Cross-browser layer.** `public/utils/browser-compat.js` detects the
+  browser and exposes one storage, tabs and runtime API.
+- **Transaction history.** Fetches recent transactions per network through
+  the Alchemy SDK when an API key is configured.
+- **React popup UI.** React 18 and TypeScript, built with
+  react-scripts and loaded as an unpacked extension.
 
-Cross-Net Wallet is designed to simplify the multi-chain experience for both users and developers. It injects a standard Ethereum provider that follows EIP-1193 and EIP-6963 standards, allowing for smooth integration with existing dApps while providing enhanced cross-chain capabilities. Built on Manifest V3 with a unified browser API abstraction layer, it works flawlessly across Chrome, Firefox, and other Chromium-based browsers.
+## Run it
 
-## ✨ Features
+### Prerequisites
 
-- **EIP-1193 Compliance**: Full compatibility with the standard Ethereum Provider API
-- **EIP-6963 Support**: Multi-wallet detection and announcement for modern dApps
-- **Cross-Chain Operations**: Easily switch between and interact with multiple blockchains
-- **Cross-Browser Compatibility**: Unified browser extension API that works across Chrome, Firefox, and Edge
-- **Manifest V3 Support**: Built on the latest extension platform for improved security and performance
-- **Transaction Management**: Send, sign, and track transactions across networks
-- **Chain Management**: Add custom networks and switch between chains
-- **Multi-Asset Support**: Manage multiple tokens and NFTs across different chains from a single interface
-- **Robust Error Handling**: Standardized error codes and messages
-- **Event System**: Real-time notifications of account, network, and wallet state changes
-- **Developer-Friendly**: Extensive logging and debugging features
+- Node.js and npm (or Bun - a `bun.lock` is also committed)
+- A Chromium or Firefox browser for loading the unpacked build
+- Optional: an Alchemy API key for transaction history
 
-## 🔧 Technical Implementation
+### Build the extension
 
-Cross-Net Wallet injects a provider script into web pages that:
-
-1. Registers as an Ethereum provider (window.ethereum)
-2. Announces itself via EIP-6963 for multi-wallet environments
-3. Communicates with the background wallet service via a messaging system
-4. Handles all standard Ethereum JSON-RPC methods
-5. Manages connection state and emits appropriate events
-
-### Browser Compatibility Layer
-
-At the core of Cross-Net Wallet is our sophisticated browser compatibility layer that:
-
-- Abstracts away differences between Chrome, Firefox, and other browsers' extension APIs
-- Automatically detects the browser environment and adapts accordingly
-- Provides a consistent Promise-based interface regardless of the underlying browser
-- Handles context invalidation and extension lifecycle events gracefully
-- Maintains secure communication channels between content scripts and background services
-
-```javascript
-// Example of our browser compatibility abstraction
-const browserAPI = (function() {
-  const isFirefox = typeof browser !== 'undefined';
-  
-  return {
-    storage: {
-      local: {
-        get: function(keys) {
-          return new Promise((resolve) => {
-            if (isFirefox) {
-              browser.storage.local.get(keys).then(resolve);
-            } else {
-              chrome.storage.local.get(keys, resolve);
-            }
-          });
-        }
-        // ...other methods
-      }
-    }
-    // ...other APIs
-  };
-})();
+```sh
+npm install
+npm run build:extension
 ```
 
-### Multi-Chain Architecture
+`build:extension` sets `INLINE_RUNTIME_CHUNK=false` (required by Manifest
+V3), produces `build/` and copies `background.js`, `contentScript.js` and
+`injectScript.js` from `public/` into it.
 
-Our wallet maintains reliable connections to multiple blockchains simultaneously through:
+Then load `build/` as an unpacked extension: `chrome://extensions` with
+Developer mode on, or `about:debugging` in Firefox.
 
-- Dynamic RPC endpoint management with automatic fallbacks for improved reliability
-- Efficient in-memory caching system for RPC requests to minimize network calls
-- Parallel batch processing of requests across different chains
-- Chain-specific transaction formatting and signing
-- Unified asset catalog system that works across all supported chains
+### Configure
 
-## 📚 API Reference
+Transaction history needs an Alchemy key in a `.env` file at the project
+root:
 
-### Standard Methods
-
-| Method | Description |
-|--------|-------------|
-| `eth_requestAccounts` | Requests user permission to connect to their accounts |
-| `eth_accounts` | Returns a list of connected accounts |
-| `eth_chainId` | Returns the current chain ID |
-| `eth_sendTransaction` | Submits a transaction for user approval and network broadcast |
-| `personal_sign` | Signs a personal message |
-| `eth_signTransaction` | Signs a transaction without sending it |
-| `eth_getBalance` | Retrieves an account's balance |
-| `wallet_switchEthereumChain` | Switches to a different blockchain network |
-| `wallet_addEthereumChain` | Adds a new blockchain network |
-| `eth_sign` | Signs data with an Ethereum account |
-| `eth_signTypedData` | Signs typed data according to EIP-712 |
-
-### Events
-
-| Event | Parameters | Description |
-|-------|------------|-------------|
-| `accountsChanged` | `Array<string>` | Emitted when the accounts array changes |
-| `chainChanged` | `string` | Emitted when the connected chain changes |
-| `connect` | `{ chainId: string }` | Emitted when the provider is connected |
-| `disconnect` | `Error` | Emitted when the provider loses its connection |
-| `networkChanged` | `string` | Legacy event emitted for network changes |
-| `chainIdChanged` | `string` | Alternative event for chain ID changes |
-
-## 🚀 Getting Started
-
-### For Users
-
-1. Install the Cross-Net Wallet extension from your browser's extension store
-2. Create a new wallet or import an existing one
-3. Browse to your favorite dApp and connect your wallet
-4. Enjoy seamless cross-chain interactions!
-
-### For Developers
-
-To interact with Cross-Net Wallet in your dApp:
-
-```javascript
-// Check if Cross-Net is available
-if (window.ethereum) {
-  try {
-    // Request user permission to connect
-    const accounts = await window.ethereum.request({ 
-      method: 'eth_requestAccounts' 
-    });
-    
-    // Get the current chain ID
-    const chainId = await window.ethereum.request({ 
-      method: 'eth_chainId' 
-    });
-    
-    console.log(`Connected to chain ${chainId} with account ${accounts[0]}`);
-    
-    // Listen for account changes
-    window.ethereum.on('accountsChanged', (accounts) => {
-      console.log('Accounts changed:', accounts);
-    });
-    
-    // Listen for chain changes
-    window.ethereum.on('chainChanged', (chainId) => {
-      console.log('Chain changed:', chainId);
-      // Reload the page to refresh state
-      window.location.reload();
-    });
-    
-  } catch (error) {
-    console.error('Error connecting to wallet:', error);
-  }
-}
+```dotenv
+REACT_APP_ALCHEMY_API_KEY=your-alchemy-api-key
 ```
 
-For EIP-6963 compatibility:
+The wallet works without it; only the history list is affected.
 
-```javascript
-// Request all available providers
-window.dispatchEvent(new Event('eip6963:requestProvider'));
+### Develop
 
-// Listen for provider announcements
-window.addEventListener('eip6963:announceProvider', (event) => {
-  const { info, provider } = event.detail;
-  
-  if (info.rdns === 'com.crossnet.wallet') {
-    console.log('Cross-Net Wallet detected!');
-    // Use provider to interact with the wallet
-  }
-});
+```sh
+npm start    # CRA dev server for the popup UI
+npm test     # react-scripts test
 ```
 
-### Working with Multiple Chains
+## Provider API
 
-Cross-Net Wallet makes it easy to work with multiple chains:
+`window.ethereum.request` handles the standard read and signing methods:
 
-```javascript
-// Switch to Polygon network
-await window.ethereum.request({
-  method: 'wallet_switchEthereumChain',
-  params: [{ chainId: '0x89' }] // Polygon's chain ID in hex
-});
+| Method                    | Description                              |
+| ------------------------- | ---------------------------------------- |
+| `eth_requestAccounts`     | Connect; opens the approval screen       |
+| `eth_accounts`            | Connected accounts                       |
+| `eth_chainId`             | Current chain ID                          |
+| `eth_sendTransaction`     | Send a transaction (with approval)       |
+| `eth_signTransaction`     | Sign without sending                     |
+| `personal_sign`           | Sign a personal message                  |
+| `eth_sign`                | Sign data                                |
+| `eth_signTypedData` (_v1, _v3, _v4) | Sign EIP-712 typed data      |
+| `eth_getBalance`          | Account balance                          |
+| `eth_call`, `eth_estimateGas`, `eth_gasPrice`, `eth_blockNumber` | Read calls and gas |
+| `eth_getBlockByNumber`, `eth_getTransactionReceipt`, `eth_getCode` | Chain reads |
+| `wallet_switchEthereumChain` | Switch network                        |
+| `wallet_addEthereumChain` | Add a custom network                     |
 
-// Send a transaction on the current network
-const txHash = await window.ethereum.request({
-  method: 'eth_sendTransaction',
-  params: [{
-    from: accounts[0],
-    to: '0xRecipientAddress',
-    value: '0x38D7EA4C68000', // 0.001 ETH in hex
-    gasLimit: '0x5208', // 21000 gas in hex
-  }]
-});
+Emitted events: `accountsChanged`, `chainChanged`, `connect`, `disconnect`
+plus legacy `networkChanged` and `chainIdChanged`.
 
-// Wait for confirmation and track status
-console.log(`Transaction submitted: ${txHash}`);
+## Project structure
+
+```
+public/
+  manifest.json       # MV3 manifest: popup, content script, service worker
+  background.js       # Service worker: wallet state and RPC proxying
+  contentScript.js    # Page bridge between injectScript and background
+  injectScript.js     # The injected window.ethereum provider
+  utils/              # Browser compat, browser utils, RPC utils
+src/
+  components/         # Popup screens: approvals, settings, accounts
+  interfaces/         # Chain and Account types with network config
+  wallet-utils/       # Account and transaction helpers (ethers)
+  App.tsx             # Popup root
 ```
 
-## 🧪 Testing
+## Security notes
 
-To test Cross-Net Wallet with your dApp:
+- Accounts are stored in extension `localStorage`
+  (`mini-wallet-account`), including the private key; the password option
+  hashes a password for access control rather than encrypting the key.
+- The settings screen can display the private key and a recovery phrase.
+  Treat this build as development grade and use test accounts.
+- The content script runs at `document_start` on `<all_urls>` and the
+  manifest requests `<all_urls>` host permissions.
 
-1. Install the extension
-2. Enable developer mode in the extension
-3. Use the test networks and test accounts provided
-4. Check the console for detailed logs of all wallet operations
+## License
 
-## 🔒 Security
-
-Cross-Net Wallet implements several security features:
-
-- Private keys never leave the extension
-- All communications are encrypted
-- Signed transactions require explicit user approval
-- Chain switching and adding requires user permission
-- No automatic connections without user consent
-- Manifest V3 service worker architecture for improved security isolation
-- Advanced RPC endpoint monitoring and failover protection
-- Comprehensive input validation and sanitization
-
-## 🤝 Contributing
-
-We welcome contributions to Cross-Net Wallet! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
-
-## 📄 License
-
-Cross-Net Wallet is released under the [MIT License](LICENSE).
-
-## 📞 Contact
-
-For questions, support, or feedback, please reach out to:
-
----
-
-Built with ❤️ for the Web3 community
+Apache-2.0 - see [LICENSE](LICENSE) and [NOTICE](NOTICE).
